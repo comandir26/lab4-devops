@@ -1,0 +1,14 @@
+[Unit]
+Description=Lab4 HTTP Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+ExecStart=/opt/lab4-service/service.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
