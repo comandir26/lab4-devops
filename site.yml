@@ -1,0 +1,75 @@
+---
+- name: Deploy Lab4 HTTP Service
+  hosts: lab4
+  become: yes
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - python3
+          - git
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Create service directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      loop:
+        - /opt/lab4-service
+        - /opt/lab4-service/html
+
+    - name: Deploy index.html with student name
+      copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <body>
+          <h1>Volkov</h1>
+          </body>
+          </html>
+        dest: /opt/lab4-service/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Copy service.sh
+      copy:
+        src: service.sh
+        dest: /opt/lab4-service/service.sh
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy systemd unit file
+      copy:
+        src: lab4-service.service
+        dest: /etc/systemd/system/lab4-service.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and start lab4-service
+      systemd:
+        name: lab4-service
+        state: started
+        enabled: yes
+
+    - name: Healthcheck - verify HTTP 200
+      uri:
+        url: http://127.0.0.1:8000/
+        status_code: 200
+      register: healthcheck_result
+
+    - name: Display healthcheck result
+      debug:
+        msg: "Healthcheck passed: HTTP {{ healthcheck_result.status }}"
